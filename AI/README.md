@@ -411,4 +411,4 @@ For AI/ML related questions, refer to:
 ---
 
 *Last Updated: November 10, 2025*  
-*Part of IEEE IES FST SB TSYP Challenge 2025*
+*Part of IEEE IES TSYP Challenge 2025*
