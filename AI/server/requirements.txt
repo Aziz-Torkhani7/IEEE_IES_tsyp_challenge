@@ -1,0 +1,4 @@
+numpy
+pillow
+tensorflow==2.12.0
+joblib

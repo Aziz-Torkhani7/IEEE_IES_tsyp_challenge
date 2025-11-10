@@ -1,0 +1,22 @@
+{
+  "merged_shape": [
+    5000,
+    45
+  ],
+  "iso_features": [
+    "house_generation_10kw__V 1 MPPT(V)",
+    "house_generation_10kw__V 2 MPPT(V)",
+    "house_generation_10kw__V 3 MPPT(V)",
+    "house_generation_10kw__I 1 MPPT(A)",
+    "house_generation_10kw__I 2 MPPT(A)",
+    "house_generation_10kw__I 3 MPPT(A)",
+    "house_generation_10kw__Ua(V)",
+    "house_generation_10kw__I CA 1(A)",
+    "house_generation_10kw__FAC 1(Hz)",
+    "house_generation_10kw__power",
+    "house_generation_10kw__inverter_temp",
+    "house_generation_10kw__daily_generation"
+  ],
+  "forecast_target": "house_generation_10kw__V 1 MPPT(V)",
+  "forecast_mse": 167.38393981666667
+}
