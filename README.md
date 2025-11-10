@@ -277,14 +277,6 @@ MIT License - See LICENSE file
 
 ---
 
-## 📞 Contact
-
-**Project Repository:** https://github.com/Aziz-Torkhani7/IEEE_IES_tsyp_challenge
-
-**Team:** CubeSat Autonomy Team
-
----
-
 ## 🏅 Acknowledgments
 
 - **NASA Prognostics Center** - Battery degradation dataset
