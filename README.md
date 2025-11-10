@@ -88,7 +88,7 @@ ies_tsyp/
 │  - TLE propagation (conjunction analysis)                 │
 │  - Mission planning                                        │
 │  - Telemetry downlink                                      │
-└──────────────────────┬─────────────────────────────────────┘
+└──────────────────────┬────��────────────────────────────────┘
                        │ UHF Uplink/Downlink
                        ▼
 ┌────────────────────────────────────────────────────────────┐
@@ -112,8 +112,8 @@ ies_tsyp/
 │  │              │  TCP/IP Interface   │                │  │
 │  │              └──────────┬──────────┘                │  │
 │  └─────────────────────────┼──────────────────────────┘  │
-│                            │                              │
-│  ┌─────────────────────────┼──────────────────────────┐  │
+│                             │                             │
+│  ┌──────────────────────────┼─────────────────────────┐  │
 │  │        AI SERVER (Python) - Onboard Computer        │  │
 │  │  ┌──────────────────────┴────────────────────────┐  │  │
 │  │  │ • Obstacle Detection (YOLO/TFLite)            │  │  │
@@ -384,6 +384,96 @@ ctest
 - ADCS interface
 - System integration
 
+## 🧱 PCB Design & Hardware Platform
+
+### Overview
+This section documents the preliminary design of the CubeSat Printed Circuit Boards (PCBs) that host the power management, sensing, ADCS interface, and onboard compute support circuitry. The current architecture assumes a stacked board approach separating high-power switching from sensitive analog and digital domains.
+
+### PCB Stack-Up (Proposed)
+| Layer | Purpose |
+|-------|---------|
+| Top (L1) | Components, high-speed digital (MCU / SBC interfaces) |
+| Inner (L2) | Ground plane (low impedance return path) |
+| Inner (L3) | Power distribution (3.3V, 5V, Battery bus, Solar input) |
+| Bottom (L4) | Mixed signals, low-speed I2C/SPI/UART, test points |
+
+(If cost-constrained, a 2-layer prototype can be used with careful separation and ground fill.)
+
+### Core Functional Blocks
+| Block | Components | Notes |
+|-------|-----------|-------|
+| Power Input & Conditioning | Solar panel connectors, ideal diode ORing, LC filters | Prevent back-feed, minimize EMI from switching regulators |
+| Battery Management | BQ34Z100 (fuel gauge), protection FETs | Isolated sense lines with RC filtering |
+| MPPT & Regulation | Buck/Boost stage, INA219 sense resistor (Kelvin) | Place current shunt close to regulator, route differential pair |
+| Sensor Hub | LIDAR interface, IMU footprint (future), magnetometer | I2C pull-ups sized for bus length (2.2k–4.7k) |
+| ADCS Interface | Driver connectors (reaction wheels / magnetorquers), SPI bus | Galvanic isolation optional for noise mitigation |
+| SBC / Compute | 40-pin header (Raspberry Pi / Jetson carrier), level shifting | Power sequencing to avoid brown-out during boot |
+| Debug & Telemetry | SWD/JTAG header, USB-UART bridge (FTDI / CP2102) | Accessible on edge, clearly silkscreened |
+
+### Power Distribution
+- Battery Bus: 7.4V nominal (2S Li-ion) → protected & fused.
+- Regulated Rails: 5V (ADCS, camera), 3.3V (logic, sensors), Optional 1.8V (IMU / RF module).
+- MPPT Output feeds battery charge controller; telemetry sampled via INA219.
+- Bulk decoupling: ≥100µF low-ESR near DC-DC outputs; local decoupling: 0.1µF + 1µF at each IC.
+
+### Signal Integrity & Layout Guidelines
+1. Keep high di/dt switching loop (buck converter) area minimal; use polygon pour + short traces.
+2. Star-route analog grounds back to single ground plane via stitching vias; avoid ground loops.
+3. Differential sense (INA219 shunt) routed as a tightly coupled pair; no via imbalance.
+4. Separate noisy power stage from sensitive IMU / magnetometer (≥15mm distance or shielding can).
+5. UART & I2C traces kept short; add ESD diodes at external connectors.
+6. Camera high-speed lanes (if CSI implemented later) require impedance control (90Ω diff typical).
+7. Use test points for: 3.3V, 5V, battery bus, solar input, SDA/SCL, TX/RX, RESET, MPPT PWM.
+
+### EMC & Reliability Considerations
+- Shielding: Optional copper can over switching regulator.
+- Grounding: Single contiguous ground plane; avoid splits under high-speed signals.
+- Transient Protection: TVS diodes on solar input + battery bus entry.
+- Fusing: Resettable polyfuse (PTC) on external power harness.
+- Conformal Coating (mission phase): Acrylic or silicone after acceptance tests.
+
+### Thermal Management
+- Place heat-dissipating regulators and SBC power converters near board edge for conduction to structure.
+- Use thermal vias under regulator pads to inner copper pours.
+- Monitor temperature via onboard sensor (add footprint if not present).
+
+### Connectors & Harnessing
+| Interface | Connector | Rationale |
+|-----------|-----------|-----------|
+| Solar Panels | Micro JST / Samtec low-profile | Locking, low mass |
+| Battery Pack | Molex MicroBlade | Robust mating cycles |
+| ADCS Reaction Wheels | Board-to-board mezzanine (Samtec Q2) | High pin density |
+| Magnetorquers | 6-pin discrete (JST-GH) | Simplicity |
+| Camera | MIPI CSI flex (future) | High-speed support |
+| Ground Station Radio | 10-pin RF module header | Optional expansion |
+
+### Assembly & Manufacturing Notes
+- PCB Material: FR-4 TG ≥ 170°C (high thermal stability).
+- Copper Weight: 1 oz (top/bottom), 1 oz (internal) – upgrade to 2 oz for high-current if required.
+- Finish: ENIG for fine-pitch & gold wire bond compatibility (optional).
+- Min Trace/Space: 6/6 mil (prototype), tighten as needed.
+- DFM Review: Run ERC/DRC + 3D model clearance verification.
+
+### Test & Bring-Up Procedure (Draft)
+1. Visual inspection & continuity on power rails (no shorts).
+2. Power 3.3V rail from bench supply (limit current 100mA) – verify stable voltage.
+3. Populate only power stage & fuel gauge → validate battery sensing.
+4. Program MCU / SBC boot; check UART debug output.
+5. Attach sensors incrementally; log I2C scan results.
+6. Run MPPT closed-loop with solar simulator; capture efficiency data.
+7. Perform vibration mock (shaker) and re-test connectors/test points.
+
+### Future PCB Enhancements
+- Add on-board IMU (ICM-20948) & sun sensor interface.
+- Integrate radiation-tolerant components (Latch-up protected regulators).
+- Add watchdog & supervisor IC for system reset integrity.
+- Implement redundant power path (dual MPPT channels).
+- Add hardware crypto (ATECC608A) for secure command authentication.
+
+> NOTE: Replace placeholders with actual part numbers, stack-up details, and Gerber references once finalized.
+
+---
+
 ## 📚 References
 
 1. **MPPT Algorithms:**
@@ -410,6 +500,6 @@ ctest
 
 ---
 
-*Last Updated: November 10, 2025*  
+*Last Updated: 2025-11-10 22:50:20*  
 *Version: 1.0.0*  
 *Status: Production Ready*
